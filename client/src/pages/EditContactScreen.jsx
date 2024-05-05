@@ -38,6 +38,7 @@ export const EditContactScreen= () => {
             if (response.ok) {
                 setUser(data);
                 alert("Data updated");
+                localStorage.setItem('c_user', "");
                 navigate("/");
             } else {
                 alert(`${data.message}`);

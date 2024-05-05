@@ -1,27 +1,33 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGetAllUsersQuery } from '../rtk/services';
 
 export const CreateContact = () => {
   const navigate = useNavigate();
-  const [users, setUsers] = useState([]);
+  
+  const { data: users, error, isLoading } = useGetAllUsersQuery(); // Renamed data property to users
+  const [cachedUsers, setCachedUsers] = useState([]); // Used cachedUsers instead of users
 
-  const{data}=useGetAllUsersQuery("");
-
-
-  const getAllUsers=()=>{ 
-    if(data){
-    setUsers(data);
-    }
+  if (error) {
+    console.error("Error:", error);
+  }
+  if (isLoading) {
+    console.log("Loading...");
   }
 
+  // Update cachedUsers when data changes
+  React.useEffect(() => {
+    if (users) {
+      setCachedUsers(users);
+      localStorage.setItem("users", JSON.stringify(users)); // Moved inside useEffect to ensure it's called after the state update
+    }
+  }, [users]);
 
   const handleEdit = (userId) => {
-    const list_users= JSON.parse(localStorage.getItem("users"));
-    const c_user=list_users.find(user=>user._id===userId);
-    console.log("from ecs",c_user);
+    const c_user = cachedUsers.find(user => user._id === userId);
+    console.log("from ecs", c_user);
     localStorage.setItem("c_user", JSON.stringify(c_user));   
-    navigate("/ecs")
+    navigate("/ecs");
   };
 
   const handleDelete = async (userId) => {
@@ -30,20 +36,14 @@ export const CreateContact = () => {
         method: "DELETE",
       });
       if (response.ok) {
-        setUsers(users.filter(user => user.id !== userId));
+        setCachedUsers(cachedUsers.filter(user => user._id !== userId)); // Updated cachedUsers instead of users
       } else {
-        alert("Failed to delete user");
+        throw new Error("Failed to delete user");
       }
     } catch (error) {
       console.error(error);
     }
   };
-
-  useEffect(() => {
-    getAllUsers();
-    localStorage.setItem("users", JSON.stringify(users));
-  }, [data]);
-
 
   return (
     <div className="contact-page bg-gray-100 min-h-screen flex items-center justify-center">
@@ -66,11 +66,11 @@ export const CreateContact = () => {
                 Create Contact
               </button>
             </div>
-            {users.length > 0 ? (
+            {cachedUsers.length > 0 ? (
               <div className="users">
                 <h2 className="text-xl font-bold mb-4">Users</h2>
                 <div className="grid grid-cols-3 gap-4">
-                  {users.map((user) => (
+                  {cachedUsers.map((user) => (
                     <div key={user._id} id={user._id} className="user-box bg-gray-200 p-4 rounded">
                       <p>{user.fname} {user.lname}</p>
                       <p>{user.status ? 'Active' : 'Inactive'}</p>
